@@ -21,10 +21,16 @@ Prometheu・Alertmanagerからのアラート通知を受信し、Redmineにチ�
 ・uvicorn<br>
 ・requests<br>
 
+# ディレクトリ構成
+```bash
+/opt/alert-webhook/
+├── app.py
+└── .env
+```
 
 # 準備
 ## パッケージインストール<br>
-
+FastAPI、uvicorn、requestsをインストールします
 ```bash
 sudo apt update
 sudo apt install -y python3-fastapi python3-uvicorn python3-requests
@@ -145,20 +151,26 @@ c0117304@c0117304-test:~/alert-webhook$
 ```
 
 ## 環境変数ファイルを設定
-
+環境変数ファイルに、Redmineの各種情報を設定します
 ```bash
 sudo tee .env <<'EOF'
 REDMINE_URL=https://redmine.example.com
 REDMINE_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 REDMINE_PROJECT_ID=123
 REDMINE_TRACKER_ID=1
-REDMINE_STATUS_DONE=8
 REDMINE_STATUS_CARRYOVER=9
 EOF
 ```
+REDMINE_URL：RedmineのホームのURL</br>
+REDMINE_API_KEY：個人設定にあるAPIキー</br>
+REDMINE_PROJECT_ID：チケットを登録するプロジェクトのIDまたはプロジェクト名</br>
+REDMINE_TRACKER_ID：チケットを登録するトラッカーのID</br>
+REDMINE_STATUS_DONE：完了ステータスID</br>
+REDMINE_STATUS_CARRYOVER：持越しステータスID
 
 ## systemdサービス設定
-/etc/systemd/system/alert-webhook.service を作成<br>
+今回はsystemdで動かします</br>
+`/etc/systemd/system/alert-webhook.service` を作成します<br>
 ```bash
 sudo nano /etc/systemd/system/alert-webhook.service
 ```
@@ -199,13 +211,14 @@ WantedBy=multi-user.target
 ```
 
 ##  systemdサービスの起動
+systemdを起動します
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable alert-webhook
 sudo systemctl start alert-webhook
 sudo systemctl status alert-webhook
 ```
-
+以下のように表示され、`Active: active (running)`となっていれば動いています
 ```bash
 hoge@test:~/tickets-grouping$ sudo systemctl daemon-reload
 sudo systemctl enable alert-webhook
@@ -235,11 +248,48 @@ lines 1-20/20 (END)
 ```
 
 ## Alertmanagerの設定
-`alertmanager.yml`に以下を追加
+`alertmanager.yml`に以下を追加し、チケット作成ソフトに通知が飛ぶようにします
 ```yaml
  receivers:
       - name: "redmine"
         webhook_configs:
           - url: "http://<マシンのIPアドレスorDNS名:<port番号>/webhook"
-            send_resolved: <false ot ture>
+            send_resolved: <false OR ture>
 ```
+
+## 動作確認
+ローカルマシンから`curl`でRedmineにチケットがきちんと作成されるか確認します
+
+```bash
+curl -X POST http://localhost:5005/webhook \
+-H "Content-Type: application/json" \
+-d '{
+  "alerts": [
+    {
+      "labels": {
+        "alertname": "test",
+        "instance": "server01"
+      },
+      "annotations": {
+        "description": "test: server01"
+      }
+    }
+  ]
+}'
+```
+うまくいけばRedmine に [Alert] test (server01) チケットが作成されます</br>
+うまくいかない場合は、`.env`ファイルとAlertmanagerの`yaml`ファイルを確認してください。
+
+## チケットグルーピング
+Alertmanagerから通知を受け取ると`alertname`と`instance（ホスト名）`に基づいてチケットを登録していきます。
+
+### 初回アラート
+`[Alert] <alertname> (<instance>)` 形式でチケットを作成
+
+### 同一ホスト・同一アラート再発
+既存チケットに「再発」コメントを追加
+
+### 異なるホストで同一アラートが発生
+`[Root] [Alert] <alertname>` の親チケットを自動生成し、各ホストのチケットを子チケットとして、関連付ける。</br>
+
+これにより、同じ種類のアラートが複数ホストで発生しても、Redmine上では1つの「Root」チケットを中心に整理できます。
