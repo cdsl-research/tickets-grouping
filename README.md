@@ -23,7 +23,7 @@ Prometheu・Alertmanagerからのアラート通知を受信し、Redmineにチ�
 
 # ディレクトリ構成
 ```bash
-/opt/alert-webhook/
+~/alert-webhook/
 ├── app.py
 └── .env
 ```
