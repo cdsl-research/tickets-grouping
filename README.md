@@ -23,8 +23,8 @@ Prometheu・Alertmanagerからのアラート通知を受信し、Redmineにチ�
 
 # ディレクトリ構成
 ```bash
-~/alert-webhook/
-├── app.py
+~/tickets_grouping/
+├── tickets_grouping.py
 └── .env
 ```
 
@@ -37,7 +37,7 @@ sudo apt install -y python3-fastapi python3-uvicorn python3-requests
 ```
 
 ```bash
-hoge@test:~/alert-webhook$ sudo apt update
+hoge@test:~/tickets_grouping$ sudo apt update
 sudo apt install -y python3-fastapi python3-uvicorn python3-requests
 Hit:1 http://jp.archive.ubuntu.com/ubuntu noble InRelease
 Hit:2 http://security.ubuntu.com/ubuntu noble-security InRelease
@@ -200,7 +200,7 @@ After=network.target
 [Service]
 Type=simple
 User=ubuntu
-WorkingDirectory=/home/hoge/alert-webhook
+WorkingDirectory=/home/hoge/tickets_grouping
 EnvironmentFile/home/hoge/alert-webhook/.env
 ExecStart=/usr/bin/uvicorn app:app --host 0.0.0.0 --port 5005
 Restart=always
@@ -220,7 +220,7 @@ sudo systemctl status alert-webhook
 ```
 以下のように表示され、`Active: active (running)`となっていれば動いています
 ```bash
-hoge@test:~/tickets-grouping$ sudo systemctl daemon-reload
+hoge@test:~/tickets_grouping$ sudo systemctl daemon-reload
 sudo systemctl enable alert-webhook
 sudo systemctl start alert-webhook
 sudo systemctl status alert-webhook
@@ -277,7 +277,27 @@ curl -X POST http://localhost:5005/webhook \
   ]
 }'
 ```
-うまくいけばRedmine に [Alert] test (server01) チケットが作成されます</br>
+
+うまくいけば、CUIに`{"status":"ok"}`が表示され、Redmine に [Alert] test (server01) チケットが作成されます</br>
+```bash
+hoge@test:~/tickets_grouping$ curl -X POST http://localhost:5005/webhook -H "Content-Type: application/json" -d '{
+  "alerts": [
+    {
+      "labels": {
+        "alertname": "test",
+        "instance": "server01"
+      },
+      "annotations": {
+        "description": "test: server01"
+      }
+    }
+  ]
+}'
+{"status":"ok"}hoge@test:~/tickets_grouping$
+```
+![7](https://github.com/user-attachments/assets/79d805ca-ef47-4359-88bb-b273a9fa89b5)
+
+
 うまくいかない場合は、`.env`ファイルとAlertmanagerの`yaml`ファイルを確認してください。
 
 ## チケットグルーピング
@@ -292,4 +312,5 @@ Alertmanagerから通知を受け取ると`alertname`と`instance（ホスト名
 ### 異なるホストで同一アラートが発生
 `[Root] [Alert] <alertname>` の親チケットを自動生成し、各ホストのチケットを子チケットとして、関連付ける。</br>
 
+---
 これにより、同じ種類のアラートが複数ホストで発生しても、Redmine上では1つの「Root」チケットを中心に整理できます。
