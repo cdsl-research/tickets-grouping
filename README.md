@@ -38,7 +38,7 @@ hoge@test:~/alert-webhook$ sudo apt update
 
 ```shell
 hoge@test:~/tickets_grouping$ sudo apt update
-[sudo] password for c0117304:
+[sudo] password for hoge:
 Get:1 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
 Hit:2 http://jp.archive.ubuntu.com/ubuntu noble InRelease
 Get:3 http://jp.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
@@ -72,11 +72,11 @@ Reading package lists... Done
 Building dependency tree... Done
 Reading state information... Done
 102 packages can be upgraded. Run 'apt list --upgradable' to see them.
-hoge@test:~/alert-webhook$
+hoge@test:~/tickets_grouping$
 ```
-FastAPI、uvicorn、requestsをインストールします
+`FastAPI`、`uvicorn`、`requests`をインストールします
 ```shell
-hoge@test:~/alert-webhook$ sudo apt install -y python3-fastapi python3-uvicorn python3-requests
+hoge@test:~/tickets_grouping$ sudo apt install -y python3-fastapi python3-uvicorn python3-requests
 Reading package lists... Done
 Building dependency tree... Done
 Reading state information... Done
@@ -84,14 +84,14 @@ python3-fastapi is already the newest version (0.101.0-3).
 python3-uvicorn is already the newest version (0.27.1-1).
 python3-requests is already the newest version (2.31.0+dfsg-1ubuntu1.1).
 0 upgraded, 0 newly installed, 0 to remove and 102 not upgraded.
-hoge@test:~/alert-webhook$
+hoge@test:~/tickets_grouping$
 ```
-この環境では既にインストール済みなので、出力結果が違うかもしれません
+この環境では既にインストール済みなので、出力結果が違うと思います
 
 ## 環境変数ファイルを設定
 環境変数ファイルに、Redmineの各種情報を設定します
 ```bash
-hoge@test:~/alert-webhook$ sudo tee .env <<'EOF'
+hoge@test:~/tickets_grouping$ sudo tee .env <<'EOF'
 REDMINE_URL=https://redmine.example.com
 REDMINE_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 REDMINE_PROJECT_ID=123
@@ -123,7 +123,7 @@ After=network.target
 Type=simple
 User=ubuntu
 WorkingDirectory=/home/hoge/tickets_grouping
-EnvironmentFile/home/hoge/alert-webhook/.env
+EnvironmentFile/home/hoge/tickets_grouping/.env
 ExecStart=/usr/bin/uvicorn app:app --host 0.0.0.0 --port 5005
 Restart=always
 RestartSec=5
@@ -192,7 +192,7 @@ lines 1-20/20 (END)
  receivers:
       - name: "redmine"
         webhook_configs:
-          - url: "http://<マシンのIPアドレスorDNS名:<port番号>/webhook"
+          - url: "http://<マシンのIPアドレス OR DNS名:<port番号>/webhook"
             send_resolved: <false OR ture>
 ```
 
