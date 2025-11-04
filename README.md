@@ -189,25 +189,7 @@ lines 1-20/20 (END)
 ```
 
 ## 動作確認
-ローカルマシンから`curl`でRedmineにチケットがきちんと作成されるか確認します
-
-```shell
-hoge@test:~/tickets_grouping$ curl -X POST http://localhost:5005/webhook \
--H "Content-Type: application/json" \
--d '{
-  "alerts": [
-    {
-      "labels": {
-        "alertname": "test",
-        "instance": "server01"
-      },
-      "annotations": {
-        "description": "test: server01"
-      }
-    }
-  ]
-}'
-```
+ローカルマシンから`curl`でRedmineにチケットがきちんと作成されるか確認します<br>
 
 うまくいけば、`{"status":"ok"}`と表示され、Redmine に [Alert] test (server01) チケットが作成されます</br>
 ```shell
