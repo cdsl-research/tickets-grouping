@@ -33,10 +33,6 @@ Prometheu・Alertmanagerからのアラート通知を受信し、Redmineにチ�
 先に`apt update`をします
 
 ```shell
-hoge@test:~/alert-webhook$ sudo apt update
-```
-
-```shell
 hoge@test:~/tickets_grouping$ sudo apt update
 [sudo] password for hoge:
 Get:1 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
@@ -90,7 +86,7 @@ hoge@test:~/tickets_grouping$
 
 ## 環境変数ファイルを設定
 環境変数ファイルに、Redmineの各種情報を設定します
-```bash
+```shell
 hoge@test:~/tickets_grouping$ sudo tee .env <<'EOF'
 REDMINE_URL=https://redmine.example.com
 REDMINE_API_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -109,7 +105,7 @@ REDMINE_STATUS_CARRYOVER：持越しステータスID
 ## systemdサービス設定
 今回はsystemdで動かします</br>
 `/etc/systemd/system/alert-webhook.service` を作成します<br>
-```bash
+```shell
 hoge@test:~/tickets-grouping$sudo nano /etc/systemd/system/alert-webhook.service
 ```
 
@@ -133,7 +129,7 @@ WantedBy=multi-user.target
 ```
 
 `ls`をすると`alert-webhook.service`が追加されています
-```bash
+```shell
 hoge@test:/etc/systemd/system$ ls
 alert-webhook.service                       graphical.target.wants          sockets.target.wants
 cloud-config.target.wants                   hibernate.target.wants          sshd.service
@@ -151,14 +147,14 @@ hoge@test:/etc/systemd/system$
 ```
 ##  systemdサービスの起動
 systemdを起動します
-```bash
+```shell
 hoge@test:~/tickets_grouping$ sudo systemctl daemon-reload
 sudo systemctl enable alert-webhook
 sudo systemctl start alert-webhook
 sudo systemctl status alert-webhook
 ```
 以下のように表示され、`Active: active (running)`となっていれば動いています
-```bash
+```shell
 hoge@test:~/tickets_grouping$ sudo systemctl daemon-reload
 sudo systemctl enable alert-webhook
 sudo systemctl start alert-webhook
@@ -199,7 +195,7 @@ lines 1-20/20 (END)
 ## 動作確認
 ローカルマシンから`curl`でRedmineにチケットがきちんと作成されるか確認します
 
-```bash
+```shell
 hoge@test:~/tickets_grouping$ curl -X POST http://localhost:5005/webhook \
 -H "Content-Type: application/json" \
 -d '{
@@ -217,8 +213,8 @@ hoge@test:~/tickets_grouping$ curl -X POST http://localhost:5005/webhook \
 }'
 ```
 
-うまくいけば、CUIに`{"status":"ok"}`が表示され、Redmine に [Alert] test (server01) チケットが作成されます</br>
-```bash
+うまくいけば、`{"status":"ok"}`と表示され、Redmine に [Alert] test (server01) チケットが作成されます</br>
+```shell
 hoge@test:~/tickets_grouping$ curl -X POST http://localhost:5005/webhook -H "Content-Type: application/json" -d '{
   "alerts": [
     {
