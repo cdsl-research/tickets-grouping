@@ -94,6 +94,7 @@ REDMINE_PROJECT_ID=123
 REDMINE_TRACKER_ID=1
 REDMINE_STATUS_CARRYOVER=9
 EOF
+hoge@test:~/tickets_grouping$
 ```
 REDMINE_URL：RedmineのホームのURL</br>
 REDMINE_API_KEY：個人設定にあるAPIキー</br>
