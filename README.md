@@ -147,13 +147,8 @@ getty.target.wants                          sleep.target.wants
 hoge@test:/etc/systemd/system$
 ```
 ##  systemdサービスの起動
-systemdを起動します
-```shell
-hoge@test:~/tickets_grouping$ sudo systemctl daemon-reload
-sudo systemctl enable alert-webhook
-sudo systemctl start alert-webhook
-sudo systemctl status alert-webhook
-```
+systemdを起動します<br>
+
 以下のように表示され、`Active: active (running)`となっていれば動いています
 ```shell
 hoge@test:~/tickets_grouping$ sudo systemctl daemon-reload
