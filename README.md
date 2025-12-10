@@ -27,7 +27,6 @@ Prometheu・Alertmanagerからのアラート通知を受信し、Redmineにチ�
 ## 外部ライブラリ
 ・Fast API<br>
 ・Uvicorn<br>
-・python-dotenv<br>
 ・requests<br>
 
 # ディレクトリ構成
