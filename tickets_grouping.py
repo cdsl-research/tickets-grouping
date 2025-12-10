@@ -5,27 +5,26 @@ from typing import Dict, Any, Optional, List, Tuple
 
 import requests
 from fastapi import FastAPI, Request
-from dotenv import load_dotenv
 
 # =========================
-# 設定
+# 設定（環境変数は systemd の EnvironmentFile から）
 # =========================
-load_dotenv()
 
-REDMINE_URL = os.getenv("REDMINE_URL", "").rstrip("/")
-REDMINE_API_KEY = os.getenv("REDMINE_API_KEY", "")
-REDMINE_PROJECT_ID = os.getenv("REDMINE_PROJECT_ID", "")
-REDMINE_TRACKER_ID = os.getenv("REDMINE_TRACKER_ID", "")
-# Root用にトラッカーを分けたい場合だけ .env に REDMINE_ROOT_TRACKER_ID を定義
-REDMINE_ROOT_TRACKER_ID = os.getenv("REDMINE_ROOT_TRACKER_ID", REDMINE_TRACKER_ID)
+REDMINE_URL = (os.getenv("REDMINE_URL") or "").rstrip("/")
+REDMINE_API_KEY = os.getenv("REDMINE_API_KEY") or ""
+REDMINE_PROJECT_ID = os.getenv("REDMINE_PROJECT_ID") or ""
+REDMINE_TRACKER_ID = os.getenv("REDMINE_TRACKER_ID") or ""
+# Root用トラッカーを分けたい場合のみ REDMINE_ROOT_TRACKER_ID を設定
+REDMINE_ROOT_TRACKER_ID = os.getenv("REDMINE_ROOT_TRACKER_ID") or REDMINE_TRACKER_ID
 
 if not REDMINE_URL or not REDMINE_API_KEY or not REDMINE_PROJECT_ID or not REDMINE_TRACKER_ID:
     raise RuntimeError(
         "REDMINE_URL / REDMINE_API_KEY / REDMINE_PROJECT_ID / REDMINE_TRACKER_ID を環境変数で設定してください"
     )
 
-WINDOW_HOURS = 4    #集約時間の設定ここでは4時間
+WINDOW_HOURS = 4
 WINDOW_DELTA = timedelta(hours=WINDOW_HOURS)
+
 
 # =========================
 # Redmine helper
@@ -108,7 +107,7 @@ def set_parent_issue(issue_id: int, parent_issue_id: int) -> None:
 def search_alert_issues(alertname: str) -> List[Dict[str, Any]]:
     """
     指定された alertname に関連する Redmine のチケット一覧を返す。
-    project_id などは .env の設定を使用。
+    project_id などは環境変数の設定を使用。
     """
     issues: List[Dict[str, Any]] = []
     offset = 0
@@ -197,6 +196,7 @@ def classify_issues_for_alert(
 
     return relevant_root_issue, relevant_host_issues
 
+
 # =========================
 # アラートの整形
 # =========================
@@ -219,9 +219,9 @@ def parse_event_time(alert: Dict[str, Any]) -> datetime:
 
 def build_issue_description(alert: Dict[str, Any]) -> str:
     """
-    Alertmanager UI と同じ情報構造で Redmine の description を生成する
+    Alertmanager UI と同様の構成で Redmine の description を生成する。
+    Alert Overview / Labels / Annotations の3ブロックに分ける。
     """
-
     status = alert.get("status", "")
     receiver = alert.get("receiver", "")
     starts_at = alert.get("startsAt", "")
@@ -229,10 +229,9 @@ def build_issue_description(alert: Dict[str, Any]) -> str:
     generatorURL = alert.get("generatorURL", "")
     externalURL = alert.get("externalURL", "")
 
-    labels = alert.get("labels", {})
-    annotations = alert.get("annotations", {})
+    labels = alert.get("labels", {}) or {}
+    annotations = alert.get("annotations", {}) or {}
 
-    # JSONを見やすく整形
     labels_json = json.dumps(labels, indent=2, ensure_ascii=False)
     annotations_json = json.dumps(annotations, indent=2, ensure_ascii=False)
 
@@ -257,17 +256,20 @@ def build_issue_description(alert: Dict[str, Any]) -> str:
 
 
 def build_reoccurrence_comment(alert: Dict[str, Any]) -> str:
-    labels = alert.get("labels", {})
-    annotations = alert.get("annotations", {})
+    """再発時に既存チケットへ追記するコメント"""
+    labels = alert.get("labels", {}) or {}
+    annotations = alert.get("annotations", {}) or {}
     starts_at = alert.get("startsAt")
     instance = labels.get("instance", "unknown")
     alertname = labels.get("alertname", "unknown")
     summary = annotations.get("summary") or annotations.get("description") or ""
+
     return (
         f"[再発] alertname={alertname}, instance={instance}\n"
         f"startsAt : {starts_at}\n"
         f"summary  : {summary}"
     )
+
 
 # =========================
 # グルーピングロジック
@@ -277,14 +279,14 @@ def process_single_alert(alert: Dict[str, Any]) -> str:
     """
     ・最後にそのアラートが出てから4時間以内は同じチケットにまとめる
     ・4時間以内になければチケットを作成
-    ・同じアラート＋ホストはコメント追記
+    ・同じアラート＋ホスト（instance）はコメント追記
     ・同じアラートでホストが異なる場合は Root＋子チケット
-    （状態はすべて Redmine REST API から取得）
+      （状態はすべて Redmine REST API から取得）
     """
     if alert.get("status") != "firing":
         return "skip: status is not firing"
 
-    labels = alert.get("labels", {})
+    labels = alert.get("labels", {}) or {}
     alertname = labels.get("alertname")
     instance = labels.get("instance")
 
@@ -363,6 +365,7 @@ def process_single_alert(alert: Dict[str, Any]) -> str:
         f"instance={instance} issue_id={child_issue_id}"
     )
 
+
 # =========================
 # FastAPI
 # =========================
@@ -375,7 +378,7 @@ async def receive_alert(request: Request):
     payload = await request.json()
     alerts = payload.get("alerts", [])
 
-    results = []
+    results: List[str] = []
     for alert in alerts:
         try:
             msg = process_single_alert(alert)
@@ -385,10 +388,3 @@ async def receive_alert(request: Request):
             results.append(f"error: {e}")
 
     return {"message": "ok", "results": results}
-
-
-# ローカルテスト用
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run("app:app", host="0.0.0.0", port=5005, reload=True)
