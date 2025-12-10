@@ -17,8 +17,17 @@ Prometheu・Alertmanagerからのアラート通知を受信し、Redmineにチ�
 ・Alertmanager（0.27.0）<br>
 
 # Pythonで使用したパッケージ・ライブラリ
+## 標準ライブラリ
+・OS<br>
+・json<br>
+・datetime<br>
+・typing
+・time / timezone
+
+## 外部ライブラリ
 ・Fast API<br>
-・uvicorn<br>
+・Uvicorn<br>
+・python-dotenv<br>
 ・requests<br>
 
 # ディレクトリ構成
@@ -95,11 +104,10 @@ REDMINE_TRACKER_ID=1
 EOF
 hoge@test:~/tickets_grouping$
 ```
-REDMINE_URL：RedmineのホームのURL</br>
-REDMINE_API_KEY：個人設定にあるAPIキー</br>
-REDMINE_PROJECT_ID：チケットを登録するプロジェクトのIDまたはプロジェクト名</br>
+REDMINE_URL：Redmineの「ホーム」のURL</br>
+REDMINE_API_KEY：APIキー（個人設定から確認可能）</br>
+REDMINE_PROJECT_ID：チケットを登録するプロジェクトのID</br>
 REDMINE_TRACKER_ID：チケットを登録するトラッカーのID</br>
-REDMINE_STATUS_DONE：完了ステータスID
 
 ## systemdサービス設定
 今回はsystemdで動かします</br>
